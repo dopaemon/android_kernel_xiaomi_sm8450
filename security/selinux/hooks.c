@@ -3053,6 +3053,7 @@ static int selinux_inode_follow_link(struct dentry *dentry, struct inode *inode,
 	return avc_has_perm(sid, isec->sid, isec->sclass, FILE__READ, &ad);
 }
 
+#ifdef CONFIG_AUDIT
 static noinline int audit_inode_permission(struct inode *inode,
 					   u32 perms, u32 audited, u32 denied,
 					   int result)
@@ -3066,6 +3067,9 @@ static noinline int audit_inode_permission(struct inode *inode,
 	return slow_avc_audit(current_sid(), isec->sid, isec->sclass, perms,
 			    audited, denied, result, &ad);
 }
+#else
+#define audit_inode_permission(...) 0
+#endif
 
 static int selinux_inode_permission(struct inode *inode, int mask)
 {
