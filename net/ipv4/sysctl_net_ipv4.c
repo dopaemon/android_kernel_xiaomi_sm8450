@@ -390,7 +390,7 @@ static int proc_tcp_early_demux(struct ctl_table *table, int write,
 {
 	int ret = 0;
 
-	ret = proc_dointvec(table, write, buffer, lenp, ppos);
+	ret = proc_dou8vec_minmax(table, write, buffer, lenp, ppos);
 
 	if (write && !ret) {
 		int enabled = init_net.ipv4.sysctl_tcp_early_demux;
@@ -406,7 +406,7 @@ static int proc_udp_early_demux(struct ctl_table *table, int write,
 {
 	int ret = 0;
 
-	ret = proc_dointvec(table, write, buffer, lenp, ppos);
+	ret = proc_dou8vec_minmax(table, write, buffer, lenp, ppos);
 
 	if (write && !ret) {
 		int enabled = init_net.ipv4.sysctl_udp_early_demux;
@@ -684,14 +684,14 @@ static struct ctl_table ipv4_net_table[] = {
 	{
 		.procname       = "udp_early_demux",
 		.data           = &init_net.ipv4.sysctl_udp_early_demux,
-		.maxlen         = sizeof(int),
+		.maxlen         = sizeof(u8),
 		.mode           = 0644,
 		.proc_handler   = proc_udp_early_demux
 	},
 	{
 		.procname       = "tcp_early_demux",
 		.data           = &init_net.ipv4.sysctl_tcp_early_demux,
-		.maxlen         = sizeof(int),
+		.maxlen         = sizeof(u8),
 		.mode           = 0644,
 		.proc_handler   = proc_tcp_early_demux
 	},
