@@ -67,6 +67,8 @@
 #include <linux/uaccess.h>
 #include <linux/debugfs.h>
 
+#define L12_ID_DET (301+119)
+
 #ifdef KERNEL_ABOVE_2_6_38
 #include <linux/input/mt.h>
 #endif
@@ -81,6 +83,7 @@
 #include "fts_lib/ftsTest.h"
 #include "fts_lib/ftsTime.h"
 #include "fts_lib/ftsTool.h"
+#include "hwid.h"
 #include <linux/power_supply.h>
 #include <linux/rtc.h>
 #include <linux/time.h>
@@ -5649,6 +5652,10 @@ int fts_chip_powercycle(struct fts_ts_info *info)
 		}
 	}
 
+	if (info->board->avdd_gpio) {
+		gpio_direction_output(info->board->avdd_gpio, 0);
+	}
+
 	if (info->avddold_reg) {
 		error = regulator_disable(info->avddold_reg);
 		if (error < 0) {
@@ -5680,6 +5687,10 @@ int fts_chip_powercycle(struct fts_ts_info *info)
 			logError(1, "%s %s: Failed to enable AVDD regulator\n",
 				 tag, __func__);
 		}
+	}
+
+	if (info->board->avdd_gpio) {
+		gpio_direction_output(info->board->avdd_gpio, 1);
 	}
 
 	mdelay(1);
@@ -7915,11 +7926,17 @@ static int fts_enable_reg(struct fts_ts_info *info, bool enable)
 		*/
 	}
 
+	if (info->board->avdd_gpio) {
+		gpio_direction_output(info->board->avdd_gpio, 1);
+	}
+
 	return OK;
 
 disable_pwr_reg:
 	if (info->avdd_reg)
 		regulator_disable(info->avdd_reg);
+	if (info->board->avdd_gpio)
+		gpio_direction_output(info->board->avdd_gpio, 0);
 
 disable_bus_reg:
 	if (info->vdd_reg)
@@ -8459,6 +8476,15 @@ static int parse_dt(struct device *dev, struct fts_hw_platform_data *bdata)
 	else {
 		bdata->vdd_reg_name = name;
 		logError(0, "%s bus_reg_name = %s\n", tag, name);
+	}
+
+	retval = of_get_named_gpio(np, "fts,avdd-gpio", 0);
+	if (retval < 0) {
+		logError(0,"%s can't find avdd-gpio[%d]\n", tag, retval);
+		bdata->avdd_gpio = 0;
+	} else {
+		logError(0,"%s get avdd-gpio[%d] from dt\n", tag, retval);
+		bdata->avdd_gpio = retval;
 	}
 
 	if (of_property_read_bool(np, "fts,reset-gpio-enable")) {
@@ -9922,6 +9948,9 @@ static struct of_device_id fts_of_match_table[] = {
 	{
 		.compatible = "st,spi",
 	},
+	{
+		.compatible = "xiaomi,l12-spi",
+	},
 	{},
 };
 
@@ -9958,6 +9987,23 @@ static struct spi_driver fts_spi_driver = {
 
 static int __init fts_driver_init(void)
 {
+	int gpio_119;
+	uint32_t hw_project;
+	hw_project = get_hw_version_platform();
+
+	/* diting (L12) has two touch variants, check for FTS */
+	if (hw_project == HARDWARE_PROJECT_L12) {
+		gpio_direction_input(L12_ID_DET);
+		gpio_119 = gpio_get_value(L12_ID_DET);
+		logError(1, "%s gpio_119 = %d\n", tag, gpio_119);
+		if (!gpio_119) {
+			logError(1, "%s TP is goodix\n", tag);
+			return 0;
+		} else {
+			logError(1, "%s TP is st 61y\n", tag);
+		}
+	}
+
 #ifdef I2C_INTERFACE
 	return i2c_add_driver(&fts_i2c_driver);
 #else
@@ -9978,5 +10024,5 @@ MODULE_DESCRIPTION("STMicroelectronics MultiTouch IC Driver");
 MODULE_AUTHOR("STMicroelectronics");
 MODULE_LICENSE("GPL");
 
-late_initcall(fts_driver_init);
+module_init(fts_driver_init);
 module_exit(fts_driver_exit);
