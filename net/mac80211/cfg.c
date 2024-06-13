@@ -2743,16 +2743,6 @@ static int ieee80211_set_wds_peer(struct wiphy *wiphy, struct net_device *dev,
 	return 0;
 }
 
-static int ieee80211_set_wds_peer(struct wiphy *wiphy, struct net_device *dev,
-				  const u8 *addr)
-{
-	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
-
-	memcpy(&sdata->u.wds.remote_addr, addr, ETH_ALEN);
-
-	return 0;
-}
-
 static void ieee80211_rfkill_poll(struct wiphy *wiphy)
 {
 	struct ieee80211_local *local = wiphy_priv(wiphy);
