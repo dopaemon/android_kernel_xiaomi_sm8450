@@ -345,10 +345,10 @@ static int touch_mode_set(enum touch_mode mode, int value)
 		switch (value) {
 		case TOUCH_FOLD_STATUS_UNFOLDED:
 			requested_touch_id = TOUCH_ID_PRIMARY;
-			return 0;
+			break;
 		case TOUCH_FOLD_STATUS_FOLDED:
 			requested_touch_id = TOUCH_ID_SECONDARY;
-			return 0;
+			break;
 		default:
 			return -EINVAL;
 		}
